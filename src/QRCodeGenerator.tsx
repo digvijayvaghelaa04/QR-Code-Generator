@@ -11,7 +11,7 @@ declare global {
 const TRANSLATIONS = {
   "en-US": {
     "appTitle": "QR Code Generator",
-    "appDescription": "Generate QR codes for URLs, text, and contact information",
+    "appDescription": "Create QR codes for URLs, text, and contact information instantly",
     "urlTab": "URL",
     "textTab": "Text",
     "contactTab": "Contact",
@@ -36,19 +36,19 @@ const TRANSLATIONS = {
     "website": "Website",
     "websitePlaceholder": "https://example.com",
     "clearAllFields": "Clear All Fields",
-    "generatedQrCode": "Generated QR Code",
-    "scanQrCode": "Scan this QR code with your device",
+    "generatedQrCode": "Your QR Code",
+    "scanQrCode": "Scan with any QR code reader",
     "fillFormPrompt": "Fill in the form to generate your QR code",
     "download": "Download",
     "copyData": "Copy Data",
     "copied": "Copied!",
-    "qrCodeData": "QR Code Data:",
-    "footerText": "Generate QR codes instantly • No data stored • Free to use",
+    "qrCodeData": "QR Code Data",
+    "footerText": "Free QR Code Generator • No data stored • Works offline",
     "qrCodeAlt": "Generated QR Code"
   },
   "es-ES": {
     "appTitle": "Generador de Códigos QR",
-    "appDescription": "Genera códigos QR para URLs, texto e información de contacto",
+    "appDescription": "Crea códigos QR para URLs, texto e información de contacto al instante",
     "urlTab": "URL",
     "textTab": "Texto",
     "contactTab": "Contacto",
@@ -73,14 +73,14 @@ const TRANSLATIONS = {
     "website": "Sitio Web",
     "websitePlaceholder": "https://ejemplo.com",
     "clearAllFields": "Limpiar Todos los Campos",
-    "generatedQrCode": "Código QR Generado",
-    "scanQrCode": "Escanea este código QR con tu dispositivo",
+    "generatedQrCode": "Tu Código QR",
+    "scanQrCode": "Escanea con cualquier lector de códigos QR",
     "fillFormPrompt": "Completa el formulario para generar tu código QR",
     "download": "Descargar",
     "copyData": "Copiar Datos",
     "copied": "¡Copiado!",
-    "qrCodeData": "Datos del Código QR:",
-    "footerText": "Genera códigos QR al instante • No se almacenan datos • Gratis",
+    "qrCodeData": "Datos del Código QR",
+    "footerText": "Generador de Códigos QR Gratuito • Sin datos almacenados • Funciona sin conexión",
     "qrCodeAlt": "Código QR Generado"
   }
 };
@@ -99,13 +99,89 @@ const t = (key: string): string => {
   return (translations && translations[key as keyof typeof translations]) || TRANSLATIONS['en-US'][key as keyof typeof TRANSLATIONS['en-US']] || key;
 };
 
+// ============================================================================
+// REUSABLE COMPONENTS & UTILITIES
+// ============================================================================
+
+interface FormInputProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  rows?: number;
+  helperText?: string;
+}
+
+const FormInput: React.FC<FormInputProps> = ({ label, placeholder, value, onChange, type = 'text', rows, helperText }) => (
+  <div className="flex flex-col gap-2">
+    <label className="text-sm md:text-base font-semibold text-slate-800">
+      {label}
+    </label>
+    {type === 'textarea' ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows || 4}
+        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white text-slate-900 placeholder:text-slate-500"
+      />
+    ) : (
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border-2 border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white text-slate-900 placeholder:text-slate-500"
+      />
+    )}
+    {helperText && (
+      <p className="text-xs sm:text-sm text-slate-600">{helperText}</p>
+    )}
+  </div>
+);
+
+interface ActionButtonProps {
+  onClick: () => void;
+  label: string;
+  icon?: React.ReactNode;
+  variant?: 'primary' | 'secondary';
+  className?: string;
+  disabled?: boolean;
+}
+
+const ActionButton: React.FC<ActionButtonProps> = ({ onClick, label, icon, variant = 'primary', className = '', disabled = false }) => {
+  const baseStyles = 'flex items-center justify-center gap-2 px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] sm:min-h-[48px]';
+  
+  const variants = {
+    primary: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-xl',
+    secondary: 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-2 border-slate-200'
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`${baseStyles} ${variants[variant]} ${className}`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+};
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 const QRCodeGenerator = () => {
   const [activeTab, setActiveTab] = useState('url');
   const [qrData, setQrData] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement>(null);
   
-  // Form states for different types
+  // Form states
   const [urlInput, setUrlInput] = useState('');
   const [textInput, setTextInput] = useState('');
   const [contactInfo, setContactInfo] = useState({
@@ -117,7 +193,7 @@ const QRCodeGenerator = () => {
     url: ''
   });
 
-  // QR Code generation using QRious library via CDN
+  // QR Code generation
   const generateQRCode = async (text: string): Promise<void> => {
     if (!text.trim()) {
       if (qrContainerRef.current) {
@@ -126,22 +202,28 @@ const QRCodeGenerator = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
-      // Load QRious library dynamically
       if (!window.QRious) {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js';
         script.onload = () => {
           createQR(text);
+          setIsLoading(false);
+        };
+        script.onerror = () => {
+          generateFallbackQR(text);
+          setIsLoading(false);
         };
         document.head.appendChild(script);
       } else {
         createQR(text);
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Error loading QR library:', error);
-      // Fallback to Google Charts API
       generateFallbackQR(text);
+      setIsLoading(false);
     }
   };
 
@@ -149,32 +231,21 @@ const QRCodeGenerator = () => {
     if (!qrContainerRef.current) return;
     
     try {
-      // Clear previous QR code
       qrContainerRef.current.innerHTML = '';
-      
-      // Create canvas element
       const canvas = document.createElement('canvas');
       qrContainerRef.current.appendChild(canvas);
       
-      // Generate QR code
       const qr = new window.QRious({
         element: canvas,
         value: text,
-        size: 300,
+        size: 280,
         background: 'white',
-        foreground: 'black',
+        foreground: '#0f172a',
         level: 'M'
       });
       
-      // Style the canvas
-      canvas.className = 'w-full h-auto rounded-xl shadow-lg bg-white';
-      canvas.style.maxWidth = '300px';
-      canvas.style.height = 'auto';
-      
-      // Use qr to avoid unused variable warning
-      if (qr) {
-        void qr;
-      }
+      canvas.className = 'w-full h-auto max-w-xs mx-auto rounded-lg';
+      if (qr) void qr;
     } catch (error) {
       console.error('Error creating QR code:', error);
       generateFallbackQR(text);
@@ -183,23 +254,16 @@ const QRCodeGenerator = () => {
 
   const generateFallbackQR = (text: string): void => {
     if (!qrContainerRef.current) return;
-    
-    // Clear previous content
     qrContainerRef.current.innerHTML = '';
     
-    // Create img element for fallback
     const img = document.createElement('img');
     const encodedData = encodeURIComponent(text);
-    img.src = `https://chart.googleapis.com/chart?chs=300x300&cht=qr&chl=${encodedData}&choe=UTF-8`;
+    img.src = `https://chart.googleapis.com/chart?chs=280x280&cht=qr&chl=${encodedData}&choe=UTF-8`;
     img.alt = t('qrCodeAlt');
-    img.className = 'w-full h-auto rounded-xl shadow-lg bg-white p-4';
-    img.style.maxWidth = '300px';
-    img.style.height = 'auto';
+    img.className = 'w-full h-auto max-w-xs mx-auto rounded-lg';
     
-    // Add error handling for the fallback image
     img.onerror = () => {
-      // If Google Charts also fails, try QR Server API
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedData}&format=png&margin=10`;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodedData}&format=png&margin=10`;
     };
     
     qrContainerRef.current.appendChild(img);
@@ -207,8 +271,6 @@ const QRCodeGenerator = () => {
 
   const formatUrl = (url: string): string => {
     if (!url.trim()) return '';
-    
-    // Add protocol if missing
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
       return 'https://' + url;
     }
@@ -216,7 +278,7 @@ const QRCodeGenerator = () => {
   };
 
   const generateVCard = (contact: any): string => {
-    const vcard = `BEGIN:VCARD
+    return `BEGIN:VCARD
 VERSION:3.0
 FN:${contact.firstName} ${contact.lastName}
 N:${contact.lastName};${contact.firstName};;;
@@ -225,7 +287,6 @@ TEL:${contact.phone}
 EMAIL:${contact.email}
 URL:${contact.url}
 END:VCARD`;
-    return vcard;
   };
 
   useEffect(() => {
@@ -243,8 +304,6 @@ END:VCARD`;
           data = generateVCard(contactInfo);
         }
         break;
-      default:
-        data = '';
     }
     
     setQrData(data);
@@ -258,13 +317,11 @@ END:VCARD`;
     const img = qrContainerRef.current?.querySelector('img');
     
     if (canvas) {
-      // Download from canvas
       const link = document.createElement('a');
       link.download = `qr-code-${activeTab}.png`;
       link.href = canvas.toDataURL();
       link.click();
     } else if (img) {
-      // Download from image
       const link = document.createElement('a');
       link.download = `qr-code-${activeTab}.png`;
       link.href = img.src;
@@ -277,9 +334,9 @@ END:VCARD`;
       try {
         await navigator.clipboard.writeText(qrData);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setTimeout(() => setCopied(false), 2500);
       } catch (err) {
-        console.error('Failed to copy text: ', err);
+        console.error('Failed to copy text:', err);
       }
     }
   };
@@ -287,14 +344,7 @@ END:VCARD`;
   const resetForm = () => {
     setUrlInput('');
     setTextInput('');
-    setContactInfo({
-      firstName: '',
-      lastName: '',
-      phone: '',
-      email: '',
-      organization: '',
-      url: ''
-    });
+    setContactInfo({ firstName: '', lastName: '', phone: '', email: '', organization: '', url: '' });
     setQrData('');
     if (qrContainerRef.current) {
       qrContainerRef.current.innerHTML = '';
@@ -308,237 +358,176 @@ END:VCARD`;
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
-            <QrCode className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50">
+      {/* Header Section */}
+      <div className="w-full px-4 sm:px-6 py-8 sm:py-12 md:py-16">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col items-center text-center gap-3 sm:gap-4">
+            <div className="inline-flex items-center justify-center w-14 sm:w-16 h-14 sm:h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg">
+              <QrCode className="w-7 sm:w-8 h-7 sm:h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">
+                {t('appTitle')}
+              </h1>
+              <p className="text-sm sm:text-base md:text-lg text-slate-600 mt-2">
+                {t('appDescription')}
+              </p>
+            </div>
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent mb-2">
-            {t('appTitle')}
-          </h1>
-          <p className="text-gray-600 text-lg">{t('appDescription')}</p>
         </div>
+      </div>
 
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-cyan-100">
+      {/* Main Content */}
+      <div className="w-full px-4 sm:px-6 pb-8 sm:pb-12 md:pb-16">
+        <div className="max-w-6xl mx-auto">
           {/* Tab Navigation */}
-          <div className="border-b border-cyan-100 bg-gradient-to-r from-slate-50 to-cyan-50">
-            <nav className="flex">
+          <div className="bg-white rounded-t-2xl border-b-2 border-slate-200 shadow-sm">
+            <div className="flex">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
+                const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium transition-all duration-200 ${
-                      activeTab === tab.id
-                        ? 'text-cyan-600 border-b-2 border-cyan-500 bg-white'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-cyan-50'
-                    }`}
+                    className={`
+                      flex-1 flex items-center justify-center gap-2 px-3 sm:px-6 py-3 sm:py-4
+                      text-sm sm:text-base font-semibold transition-all duration-200
+                      border-b-4 min-h-[48px] sm:min-h-[56px]
+                      ${isActive 
+                        ? 'text-blue-600 border-blue-500 bg-blue-50' 
+                        : 'text-slate-600 border-transparent hover:text-slate-900 hover:bg-slate-50'
+                      }
+                    `}
                   >
-                    <IconComponent className="w-4 h-4" />
-                    {tab.label}
+                    <IconComponent className="w-5 h-5" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden text-xs">{tab.label}</span>
                   </button>
                 );
               })}
-            </nav>
+            </div>
           </div>
 
-          <div className="p-8">
-            <div className="grid lg:grid-cols-2 gap-8">
+          {/* Content Grid */}
+          <div className="bg-white rounded-b-2xl shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 p-4 sm:p-6 md:p-8">
+              
               {/* Input Section */}
-              <div className="space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              <div className="flex flex-col gap-4 sm:gap-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
                   {activeTab === 'url' && t('enterUrl')}
                   {activeTab === 'text' && t('enterText')}
                   {activeTab === 'contact' && t('contactInformation')}
                 </h2>
 
-                {/* URL Input */}
-                {activeTab === 'url' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('websiteUrl')}
-                    </label>
-                    <input
-                      type="url"
-                      value={urlInput}
-                      onChange={(e) => setUrlInput(e.target.value)}
+                <div className="flex flex-col gap-4 sm:gap-5">
+                  {/* URL Input */}
+                  {activeTab === 'url' && (
+                    <FormInput
+                      label={t('websiteUrl')}
                       placeholder={t('urlPlaceholder')}
-                      className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
+                      value={urlInput}
+                      onChange={setUrlInput}
+                      helperText={t('urlHelp')}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('urlHelp')}
-                    </p>
-                  </div>
-                )}
+                  )}
 
-                {/* Text Input */}
-                {activeTab === 'text' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {t('textContent')}
-                    </label>
-                    <textarea
-                      value={textInput}
-                      onChange={(e) => setTextInput(e.target.value)}
+                  {/* Text Input */}
+                  {activeTab === 'text' && (
+                    <FormInput
+                      label={t('textContent')}
                       placeholder={t('textPlaceholder')}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none"
+                      value={textInput}
+                      onChange={setTextInput}
+                      type="textarea"
+                      rows={5}
                     />
-                  </div>
-                )}
+                  )}
 
-                {/* Contact Input */}
-                {activeTab === 'contact' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t('firstName')}
-                        </label>
-                        <input
-                          type="text"
-                          value={contactInfo.firstName}
-                          onChange={(e) => setContactInfo({...contactInfo, firstName: e.target.value})}
-                          placeholder={t('firstNamePlaceholder')}
-                          className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                        />
+                  {/* Contact Input */}
+                  {activeTab === 'contact' && (
+                    <div className="flex flex-col gap-4 sm:gap-5">
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormInput label={t('firstName')} placeholder={t('firstNamePlaceholder')} value={contactInfo.firstName} onChange={(v) => setContactInfo({...contactInfo, firstName: v})} />
+                        <FormInput label={t('lastName')} placeholder={t('lastNamePlaceholder')} value={contactInfo.lastName} onChange={(v) => setContactInfo({...contactInfo, lastName: v})} />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {t('lastName')}
-                        </label>
-                        <input
-                          type="text"
-                          value={contactInfo.lastName}
-                          onChange={(e) => setContactInfo({...contactInfo, lastName: e.target.value})}
-                          placeholder={t('lastNamePlaceholder')}
-                          className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                        />
-                      </div>
+                      <FormInput label={t('phoneNumber')} placeholder={t('phonePlaceholder')} type="tel" value={contactInfo.phone} onChange={(v) => setContactInfo({...contactInfo, phone: v})} />
+                      <FormInput label={t('emailAddress')} placeholder={t('emailPlaceholder')} type="email" value={contactInfo.email} onChange={(v) => setContactInfo({...contactInfo, email: v})} />
+                      <FormInput label={t('organization')} placeholder={t('organizationPlaceholder')} value={contactInfo.organization} onChange={(v) => setContactInfo({...contactInfo, organization: v})} />
+                      <FormInput label={t('website')} placeholder={t('websitePlaceholder')} type="url" value={contactInfo.url} onChange={(v) => setContactInfo({...contactInfo, url: v})} />
                     </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('phoneNumber')}
-                      </label>
-                      <input
-                        type="tel"
-                        value={contactInfo.phone}
-                        onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-                        placeholder={t('phonePlaceholder')}
-                        className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('emailAddress')}
-                      </label>
-                      <input
-                        type="email"
-                        value={contactInfo.email}
-                        onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-                        placeholder={t('emailPlaceholder')}
-                        className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('organization')}
-                      </label>
-                      <input
-                        type="text"
-                        value={contactInfo.organization}
-                        onChange={(e) => setContactInfo({...contactInfo, organization: e.target.value})}
-                        placeholder={t('organizationPlaceholder')}
-                        className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {t('website')}
-                      </label>
-                      <input
-                        type="url"
-                        value={contactInfo.url}
-                        onChange={(e) => setContactInfo({...contactInfo, url: e.target.value})}
-                        placeholder={t('websitePlaceholder')}
-                        className="w-full px-4 py-3 border border-cyan-200 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
-                      />
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <button
                   onClick={resetForm}
-                  className="w-full px-6 py-3 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 transition-all duration-200 font-medium border border-cyan-200"
+                  className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition-all duration-200 border-2 border-slate-200 min-h-[44px]"
                 >
                   {t('clearAllFields')}
                 </button>
               </div>
 
-              {/* QR Code Display Section */}
-              <div className="flex flex-col items-center space-y-6">
-                <h2 className="text-2xl font-semibold text-gray-800">{t('generatedQrCode')}</h2>
-                
-                <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-2xl p-8 w-full max-w-sm border border-cyan-100">
-                  {qrData ? (
-                    <div className="text-center">
-                      <div ref={qrContainerRef} className="flex justify-center">
-                        {/* QR code will be dynamically inserted here */}
+              {/* QR Display Section */}
+              <div className="flex flex-col gap-4 sm:gap-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{t('generatedQrCode')}</h2>
+
+                {/* QR Code Card */}
+                <div className="flex-1 flex flex-col gap-4">
+                  <div className="bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-slate-200 rounded-2xl p-6 sm:p-8 flex items-center justify-center min-h-[250px] sm:min-h-[300px]">
+                    {qrData ? (
+                      <div className="w-full flex flex-col items-center gap-3">
+                        {isLoading && (
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <div className="animate-spin">
+                              <QrCode className="w-5 h-5" />
+                            </div>
+                            <span className="text-sm">Creating QR Code...</span>
+                          </div>
+                        )}
+                        <div ref={qrContainerRef} className="w-full flex justify-center" />
+                        <p className="text-sm sm:text-base text-slate-600 text-center">{t('scanQrCode')}</p>
                       </div>
-                      <p className="text-sm text-gray-600 mt-4">
-                        {t('scanQrCode')}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-16">
-                      <QrCode className="w-16 h-16 text-cyan-300 mx-auto mb-4" />
-                      <p className="text-gray-500">
-                        {t('fillFormPrompt')}
-                      </p>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-center">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-100 rounded-2xl flex items-center justify-center">
+                          <QrCode className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+                        </div>
+                        <p className="text-slate-600 font-medium">{t('fillFormPrompt')}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Action Buttons */}
                 {qrData && (
-                  <div className="flex gap-4 w-full max-w-sm">
-                    <button
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    <ActionButton
+                      variant="primary"
                       onClick={downloadQRCode}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
-                    >
-                      <Download className="w-4 h-4" />
-                      {t('download')}
-                    </button>
-                    
-                    <button
+                      label={t('download')}
+                      icon={<Download className="w-5 h-5" />}
+                      className="flex-1"
+                    />
+                    <ActionButton
+                      variant="primary"
                       onClick={copyToClipboard}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-cyan-50 text-cyan-700 rounded-xl hover:bg-cyan-100 transition-all duration-200 font-medium border border-cyan-200"
-                    >
-                      {copied ? (
-                        <>
-                          <Check className="w-4 h-4 text-green-600" />
-                          {t('copied')}
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          {t('copyData')}
-                        </>
-                      )}
-                    </button>
+                      label={copied ? t('copied') : t('copyData')}
+                      icon={copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
+                      className="flex-1"
+                    />
                   </div>
                 )}
 
+                {/* QR Data Display */}
                 {qrData && (
-                  <div className="w-full max-w-sm">
-                    <h3 className="text-sm font-medium text-gray-700 mb-2">{t('qrCodeData')}</h3>
-                    <div className="bg-slate-100 rounded-lg p-3 text-xs text-gray-600 max-h-32 overflow-y-auto border border-cyan-100">
-                      <pre className="whitespace-pre-wrap break-words">{qrData}</pre>
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-lg p-4 flex flex-col gap-2">
+                    <h3 className="text-sm font-semibold text-slate-900">{t('qrCodeData')}</h3>
+                    <div className="bg-white rounded border border-slate-200 p-3 max-h-40 overflow-y-auto">
+                      <pre className="text-xs sm:text-sm text-slate-700 whitespace-pre-wrap break-words font-mono">
+                        {qrData.substring(0, 200)}{ qrData.length > 200 ? '...' : ''}
+                      </pre>
                     </div>
                   </div>
                 )}
@@ -546,9 +535,14 @@ END:VCARD`;
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="text-center mt-8 text-gray-500 text-sm">
-          <p>{t('footerText')}</p>
+      {/* Footer */}
+      <div className="w-full px-4 sm:px-6 py-6 sm:py-8 border-t border-slate-200 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <p className="text-center text-xs sm:text-sm text-slate-600">
+            {t('footerText')}
+          </p>
         </div>
       </div>
     </div>

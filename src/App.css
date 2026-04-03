@@ -1,6 +1,9 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* App-level styles - mostly handled by Tailwind CSS */
+/* Add any app-wide overrides or special styles here if needed */
+
+@layer components {
+  /* App container */
+  .app-container {
+    @apply w-full min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50;
+  }
 }

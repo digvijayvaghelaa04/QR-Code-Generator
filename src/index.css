@@ -1,31 +1,6 @@
-/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind base;
-/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind components;
-/* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
-/* stylelint-enable at-rule-no-unknown */
-
-:root {
-  --primary: #0ea5e9;
-  --primary-dark: #0284c7;
-  --secondary: #06b6d4;
-  --accent: #14b8a6;
-  --bg-light: #f8fafc;
-  --bg-darker: #1e293b;
-  --text-light: #0f172a;
-  --text-muted: #64748b;
-  --border-color: #e2e8f0;
-  color: var(--text-light);
-  background-color: var(--bg-light);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f1f5f9;
-    background-color: var(--bg-darker);
-  }
-}
 
 * {
   margin: 0;
@@ -33,82 +8,243 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
-  width: 100%;
-  height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root {
+  /* Core Colors */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+
+  /* Text Colors */
+  --color-text-900: #0f172a;
+  --color-text-800: #1e293b;
+  --color-text-700: #334155;
+  --color-text-600: #475569;
+  --color-text-500: #64748b;
+
+  /* Background Colors */
+  --color-bg-light: #ffffff;
+  --color-bg-50: #f8fafc;
+  --color-bg-100: #f1f5f9;
+  --color-bg-200: #e2e8f0;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
 }
 
-a {
-  color: var(--primary);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s ease;
+/* ============================================================================
+   TYPOGRAPHY SYSTEM
+   ============================================================================ */
+
+@layer base {
+  html, body, #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--color-text-900);
+    background-color: var(--color-bg-light);
+    line-height: 1.6;
+  }
+
+  body {
+    background-color: #f8fafc;
+  }
+
+  /* Responsive Font Sizes */
+  h1 {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-xl sm:text-2xl font-bold;
+  }
+
+  label {
+    @apply text-sm md:text-base font-semibold;
+  }
+
+  p {
+    @apply text-sm sm:text-base;
+  }
+
+  /* Button Focus */
+  button {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2;
+  }
+
+  /* Input Focus */
+  input, textarea, select {
+    @apply focus:outline-none;
+  }
+
+  /* Link Focus */
+  a {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded;
+  }
 }
 
-a:hover {
-  color: var(--secondary);
+/* ============================================================================
+   ACCESSIBILITY & RESPONSIVE LAYOUT
+   ============================================================================ */
+
+@layer components {
+  /* Touch-friendly sizes */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Value Container */
+  .value-container {
+    @apply px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base;
+  }
+
+  /* Card base */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Premium gradient */
+  .gradient-premium {
+    @apply bg-gradient-to-br from-blue-500 to-cyan-500;
+  }
+
+  /* Responsive padding */
+  .px-responsive {
+    @apply px-4 sm:px-6 md:px-8;
+  }
+
+  .py-responsive {
+    @apply py-6 sm:py-8 md:py-12;
+  }
+
+  /* Responsive gap */
+  .gap-responsive {
+    @apply gap-4 sm:gap-6 md:gap-8;
+  }
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  border-radius: 0.5rem;
-}
+/* ============================================================================
+   SCROLLBAR STYLING
+   ============================================================================ */
 
-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-button:active {
-  transform: translateY(0);
-}
-
-input, textarea, select {
-  font-family: inherit;
-  transition: all 0.2s ease;
-}
-
-textarea {
-  resize: vertical;
-}
-
-/* Scrollbar styling */
+/* Webkit browsers (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-light);
+  background: var(--color-bg-50);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-text-400, #cbd5e1);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-text-500, #94a3b8);
 }
 
+/* Firefox */
+* {
+  scrollbar-color: var(--color-text-400, #cbd5e1) var(--color-bg-50);
+  scrollbar-width: thin;
+}
+
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@layer utilities {
+  .animate-slideInUp {
+    @apply animate-[slideInUp_0.3s_ease-out];
+  }
+
+  .animate-fadeIn {
+    @apply animate-[fadeIn_0.2s_ease-out];
+  }
+}
+
+/* ============================================================================
+   RESPONSIVE UTILITY OVERRIDES
+   ============================================================================ */
+
+/* Ensure proper scaling on all devices */
+@media (max-width: 640px) {
+  body {
+    font-size: 16px; /* Prevent zoom on iOS input focus */
+  }
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+  }
+
+  .no-print {
+    display: none;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark Mode Support (optional) */
 @media (prefers-color-scheme: dark) {
-  ::-webkit-scrollbar-track {
-    background: var(--bg-darker);
+  :root {
+    --color-text-900: #f1f5f9;
+    --color-text-800: #e2e8f0;
+    --color-text-700: #cbd5e1;
+    --color-bg-light: #0f172a;
+    --color-bg-50: #1e293b;
+    --color-bg-100: #334155;
+    --color-bg-200: #475569;
   }
 
-  ::-webkit-scrollbar-thumb {
-    background: #475569;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
+  body {
+    background-color: #0f172a;
+    color: #f1f5f9;
   }
 }

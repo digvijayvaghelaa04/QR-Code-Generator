@@ -1,12 +1,11 @@
-import './App.css'
-import QRCodeGenerator from './QRCodeGenerator'
+import QRCodeGenerator from './QRCodeGenerator';
 
 function App() {
   return (
-    <>
+    <div className="w-full min-h-screen">
       <QRCodeGenerator />
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
